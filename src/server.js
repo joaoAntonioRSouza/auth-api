@@ -26,9 +26,9 @@ class Server {
       // Inicializa conexões
       this.appInitializer = await AppInitializer.initialize()
 
-      const blacklistService = new BlacklistService(this.appInitializer.getBlacklistRepository(), JWTService)
+      const blacklistService = new BlacklistService(this.appInitializer.blacklistRepository, JWTService)
 
-      this.app.locals.blacklistRepository = this.appInitializer.getBlacklistRepository()
+      this.app.locals.blacklistRepository = this.appInitializer.blacklistRepository
       this.app.locals.blacklistService = blacklistService
 
       TaskScheduler.schedule(
@@ -124,7 +124,7 @@ class Server {
 
   setupErrorHandling() {
     // 404 Handler
-    this.app.use("*", (req, res) => {
+    this.app.use((req, res) => {
       ApiResponse.notFound(res, `Rota ${req.originalUrl} não encontrada`)
     })
 
@@ -153,9 +153,9 @@ class Server {
   async start() {
     try {
       this.app.listen(this.port, () => {
-        Logger.info(`🚀 Servidor rodando na porta ${this.port}`)
-        Logger.info(`📚 Documentação: http://localhost:${this.port}/api-docs`)
-        Logger.info(`❤️  Health Check: http://localhost:${this.port}/health`)
+        Logger.info(` Servidor rodando na porta ${this.port}`)
+        Logger.info(` Documentação: http://localhost:${this.port}/api-docs`)
+        Logger.info(`  Health Check: http://localhost:${this.port}/health`)
       })
     } catch (error) {
       Logger.error("Erro ao iniciar servidor:", error)
@@ -164,7 +164,7 @@ class Server {
   }
 
   async shutdown() {
-    Logger.info("🛑 Encerrando servidor...")
+    Logger.info(" Encerrando servidor...")
     TaskScheduler.cancelAll()
     await AppInitializer.cleanup()
     process.exit(0)
