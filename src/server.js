@@ -18,18 +18,16 @@ class Server {
   constructor() {
     this.app = express()
     this.port = process.env.PORT || 3000
-    this.appInitializer = null
   }
 
   async initialize() {
     try {
-      // Inicializa conexões
-      this.appInitializer = await AppInitializer.initialize()
+      // Inicializa tudo (banco, redis, blacklist)
+      await AppInitializer.initialize()
 
-      const blacklistService = new BlacklistService(this.appInitializer.blacklistRepository, JWTService)
-
-      this.app.locals.blacklistRepository = this.appInitializer.blacklistRepository
-      this.app.locals.blacklistService = blacklistService
+      // Use o getter para acessar o blacklistRepository
+      const blacklistService = new BlacklistService(AppInitializer.getBlacklistRepository(), JWTService)
+      this.app.locals.blacklistRepository = AppInitializer.getBlacklistRepository()
 
       TaskScheduler.schedule(
         "blacklist-cleanup",
@@ -45,8 +43,9 @@ class Server {
 
       // Configura tratamento de erros
       this.setupErrorHandling()
-
-      return this
+      Logger.info("✅ Middlewares configurados")
+      Logger.info("✅ Rotas configuradas")
+      Logger.info("✅ Tratamento de erros configurado")
     } catch (error) {
       Logger.error("Erro ao inicializar servidor:", error)
       throw error
@@ -177,9 +176,6 @@ async function startServer() {
     const server = new Server()
     await server.initialize()
     await server.start()
-
-    process.on("SIGTERM", () => server.shutdown())
-    process.on("SIGINT", () => server.shutdown())
   } catch (error) {
     Logger.error("Falha ao iniciar aplicação:", error)
     process.exit(1)

@@ -2,6 +2,9 @@ const DatabaseInitializer = require("./database-init")
 const RedisInitializer = require("./redis-init")
 const Logger = require("../utils/logger")
 
+// IMPORTANTE: Importe o model User antes do sync
+require("../models/User") // Adicione esta linha
+
 class AppInitializer {
   constructor() {
     this.database = null
@@ -17,21 +20,17 @@ class AppInitializer {
       await DatabaseInitializer.initialize()
       this.database = DatabaseInitializer.getSequelize()
 
+      // O model User já foi importado acima!
+      await this.database.sync({ alter: true }) // Cria/atualiza as tabelas conforme os models
+
       // Inicializa Redis
       const redisConfig = await RedisInitializer.initialize()
       this.redis = redisConfig.client
       this.blacklistRepository = redisConfig.blacklistRepository
 
       Logger.info("✅ Aplicação inicializada com sucesso")
-
-      return {
-        database: this.database,
-        redis: this.redis,
-        blacklistRepository: this.blacklistRepository,
-      }
     } catch (error) {
       Logger.error("❌ Erro ao inicializar aplicação:", error)
-      await this.cleanup()
       throw error
     }
   }
